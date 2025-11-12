@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chatterly</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:Poppins,sans-serif;}
+body{background:#121212;color:white;}
+.hidden{display:none;}
+#authContainer{width:360px;margin:50px auto;background:#1f1f1f;padding:30px;border-radius:20px;box-shadow:0 0 25px #00ff99;}
+#authContainer h2{text-align:center;margin-bottom:20px;color:#00ff99;}
+#authContainer input{width:100%;padding:12px;margin:10px 0;border:none;border-radius:8px;}
+#authContainer button{width:100%;padding:12px;border:none;border-radius:8px;background:#00ff99;font-weight:bold;cursor:pointer;}
+#authContainer p{text-align:center;margin-top:10px;color:#ccc;cursor:pointer;}
+#chatApp{display:none;width:95vw;height:95vh;margin:0 auto;display:flex;border-radius:20px;overflow:hidden;background:#181818;box-shadow:0 0 30px rgba(0,255,153,0.3);}
+.users-list{width:30%;border-right:2px solid #00ff99;overflow-y:auto;}
+.user{display:flex;align-items:center;padding:12px;cursor:pointer;border-bottom:1px solid #333;}
+.user:hover{background:rgba(0,255,153,0.1);}
+.avatar{width:45px;height:45px;border-radius:50%;background:#00ff99;color:black;font-weight:bold;font-size:1.2em;display:flex;justify-content:center;align-items:center;overflow:hidden;}
+.avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%;}
+.user span{margin-left:10px;}
+.chat-section{width:70%;display:flex;flex-direction:column;background:#0e0e0e;}
+.chat-header{padding:15px;background:#111;color:#00ff99;font-weight:bold;text-align:center;border-bottom:2px solid #00ff99;}
+.messages{flex:1;overflow-y:auto;padding:15px;display:flex;flex-direction:column;}
+.msg{margin:10px 0;padding:10px 15px;border-radius:15px;max-width:60%;word-wrap:break-word;}
+.sent{align-self:flex-end;background:#00ff99;color:black;}
+.received{align-self:flex-start;background:#333;color:white;}
+.msg img,.msg a{max-width:150px;border-radius:10px;display:block;}
+.input-area{display:flex;align-items:center;padding:10px;border-top:2px solid #00ff99;background:#1f1f1f;}
+#messageInput{flex:1;padding:10px;border-radius:15px;border:none;margin:0 10px;}
+button{cursor:pointer;border:none;background:#00ff99;border-radius:10px;padding:10px 20px;font-weight:bold;}
+#emojiPicker{display:none;position:absolute;bottom:70px;right:80px;background:#222;padding:10px;border-radius:10px;width:240px;max-height:150px;overflow-y:auto;}
+#emojiPicker span{font-size:22px;padding:5px;cursor:pointer;}
+#emojiPicker span:hover{background:rgba(0,255,153,0.2);}
+@media(max-width:768px){.app{flex-direction:column;}.users-list{width:100%;height:30%;display:flex;overflow-x:auto;}.chat-section{width:100%;height:70%;}}
+</style>
+</head>
+<body>
+
+<div id="authContainer">
+<h2 id="authTitle">Login</h2>
+<form id="authForm">
+<input type="text" id="username" placeholder="Username" class="hidden" />
+<input type="email" id="email" placeholder="Email" required />
+<input type="password" id="password" placeholder="Password" required />
+<input type="file" id="profilePic" class="hidden" />
+<button type="submit">Login</button>
+</form>
+<p id="toggleAuth">Don't have an account? Register</p>
+</div>
+
+<div id="chatApp" class="hidden">
+<div class="users-list" id="usersList"></div>
+<div class="chat-section">
+<div class="chat-header" id="chatHeader">Select a user</div>
+<div class="messages" id="messages"></div>
+<div class="input-area">
+<button id="emojiBtn">😊</button>
+<input id="messageInput" placeholder="Type a message..." />
+<input type="file" id="fileInput" />
+<button id="sendBtn">Send</button>
+</div>
+</div>
+</div>
+
+<div id="emojiPicker"></div>
+
+<script>
+const API = window.location.origin;
+let currentUser=null, activeChatUser=null, refreshInterval=null;
+const authContainer=document.getElementById("authContainer");
+const authForm=document.getElementById("authForm");
+const toggleAuth=document.getElementById("toggleAuth");
+const chatApp=document.getElementById("chatApp");
+const usersList=document.getElementById("usersList");
+const messagesDiv=document.getElementById("messages");
+const chatHeader=document.getElementById("chatHeader");
+const emojiPicker=document.getElementById("emojiPicker");
+let isRegister=false;
+
+toggleAuth.onclick=()=>{
+isRegister=!isRegister;
+document.getElementById("authTitle").textContent=isRegister?"Register":"Login";
+document.getElementById("username").classList.toggle("hidden",!isRegister);
+document.getElementById("profilePic").classList.toggle("hidden",!isRegister);
+authForm.querySelector("button").textContent=isRegister?"Register":"Login";
+toggleAuth.textContent=isRegister?"Already have an account? Login":"Don't have an account? Register";
+};
+
+authForm.onsubmit=async(e)=>{
+e.preventDefault();
+const formData=new FormData();
+const email=document.getElementById("email").value;
+const password=document.getElementById("password").value;
+if(isRegister){
+formData.append("username",document.getElementById("username").value);
+formData.append("email",email);
+formData.append("password",password);
+const pf=document.getElementById("profilePic").files[0];
+if(pf) formData.append("profilePic",pf);
+const res=await fetch(`${API}/register`,{method:"POST",body:formData});
+const data=await res.json();
+if(!res.ok) return alert(data.message);
+currentUser=data.user;
+}else{
+const res=await fetch(`${API}/login`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email,password})});
+const data=await res.json();
+if(!res.ok) return alert(data.message);
+currentUser=data.user;
+}
+// ✅ Hide login completely
+authContainer.style.display="none";
+// ✅ Show chat
+chatApp.style.display="flex";
+loadUsers();
+};
+
+// Load users
+async function loadUsers(){
+const res=await fetch(`${API}/users`);
+const users=await res.json();
+usersList.innerHTML="";
+users.filter(u=>u.email!==currentUser.email).forEach(u=>{
+const div=document.createElement("div");
+div.className="user";
+div.onclick=()=>openChat(u);
+const avatar=document.createElement("div");
+avatar.className="avatar";
+if(u.profilePic){const img=document.createElement("img");img.src=u.profilePic;avatar.appendChild(img);}
+else avatar.textContent=u.username[0].toUpperCase();
+div.appendChild(avatar);
+const span=document.createElement("span");span.textContent=u.username;
+div.appendChild(span);
+usersList.appendChild(div);
+});
+}
+
+async function openChat(user){
+activeChatUser=user;
+chatHeader.textContent=`Chat with ${user.username}`;
+messagesDiv.innerHTML="";
+await loadMessages();
+if(refreshInterval) clearInterval(refreshInterval);
+refreshInterval=setInterval(loadMessages,1000);
+}
+
+async function loadMessages(){
+if(!activeChatUser) return;
+const res=await fetch(`${API}/messages/${currentUser.email}/${activeChatUser.email}`);
+const msgs=await res.json();
+messagesDiv.innerHTML="";
+msgs.forEach(renderMessage);
+messagesDiv.scrollTop=messagesDiv.scrollHeight;
+}
+
+function renderMessage(m){
+const div=document.createElement("div");
+div.className="msg "+(m.sender===currentUser.email?"sent":"received");
+if(m.text) div.innerHTML=m.text;
+if(m.file){const link=document.createElement("a");link.href=m.file;link.textContent="📎 File";link.target="_blank";div.appendChild(link);}
+messagesDiv.appendChild(div);
+}
+
+// Send messages
+document.getElementById("sendBtn").onclick=sendMessage;
+document.getElementById("messageInput").addEventListener("keypress",(e)=>{if(e.key==="Enter") sendMessage();});
+
+async function sendMessage(){
+if(!activeChatUser) return alert("Select user to chat");
+const text=document.getElementById("messageInput").value.trim();
+const file=document.getElementById("fileInput").files[0];
+if(!text&&!file) return;
+const fd=new FormData();
+fd.append("sender",currentUser.email);
+fd.append("receiver",activeChatUser.email);
+fd.append("text",text);
+if(file) fd.append("file",file);
+const res=await fetch(`${API}/send`,{method:"POST",body:fd});
+const data=await res.json();
+renderMessage(data.msg);
+document.getElementById("messageInput").value="";
+document.getElementById("fileInput").value="";
+}
+
+// Emoji picker
+const emojis="😀😁😂🤣😅😊😍😘😎🤩😇😉😋🤔😴😢😭😡😱👍👎👏🙏🔥💯✨❤️".split("");
+emojis.forEach(e=>{
+const span=document.createElement("span");
+span.textContent=e;
+span.onclick=()=>{document.getElementById("messageInput").value+=e;emojiPicker.style.display="none";};
+emojiPicker.appendChild(span);
+});
+document.getElementById("emojiBtn").onclick=()=>{emojiPicker.style.display=emojiPicker.style.display==="none"?"block":"none";};
+</script>
+</body>
+</html>
