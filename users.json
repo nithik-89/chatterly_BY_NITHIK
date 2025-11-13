@@ -1,20 +1,16 @@
 [
   {
+    "id": 1762962068626,
     "username": "NITHIK",
     "email": "nithikkarnawat9@gmail.com",
     "password": "nithik",
     "profilePic": null
   },
   {
-    "username": "mihit",
+    "id": 1762962088194,
+    "username": "NITHIK1",
     "email": "nithikkarnawat5@gmail.com",
     "password": "nithik",
-    "profilePic": "/uploads/1762949155425-3ffd42e7-3adc-4448-a765-1164ccf37154.JPG"
-  },
-  {
-    "username": "Rithik Mishra",
-    "email": "nithikkarnawat7@gmail.com",
-    "password": "ritiksir",
-    "profilePic": "/uploads/1762949505381-7dc26c18-1e66-47ff-8a29-13da4ccec1d2.png"
+    "profilePic": null
   }
 ]
