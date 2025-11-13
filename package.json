@@ -1,19 +1,16 @@
 {
-  "name": "chatterly",
+  "name": "your-app-name",
   "version": "1.0.0",
-  "description": "Realtime chat app",
+  "description": "Your project description",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
   },
   "dependencies": {
-    "body-parser": "^2.2.0",
-    "cors": "^2.8.5",
-    "express": "^5.1.0",
-    "multer": "^2.0.2",
-    "socket.io": "^4.8.1"
+    "express": "^4.18.2"
+    
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": "18.x"
   }
 }
